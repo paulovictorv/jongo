@@ -17,8 +17,10 @@
 package org.jongo;
 
 import com.mongodb.AggregationOptions;
-import com.mongodb.DBCollection;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.MongoCollection;
 import org.jongo.marshall.Unmarshaller;
 import org.jongo.query.QueryFactory;
 
@@ -26,29 +28,30 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.jongo.ResultHandlerFactory.newResultHandler;
 
 public class Aggregate {
 
+    private final MongoCollection<BasicDBObject> collection;
     private final Unmarshaller unmarshaller;
     private final QueryFactory queryFactory;
-    private final List<DBObject> pipeline;
+    private final List<BasicDBObject> pipeline;
     private final AtomicReference<AggregationOptions> options;
-    private final DBCollection collection;
 
-    Aggregate(DBCollection collection, Unmarshaller unmarshaller, QueryFactory queryFactory) {
+    Aggregate(MongoCollection<BasicDBObject> collection, Unmarshaller unmarshaller, QueryFactory queryFactory) {
         this.unmarshaller = unmarshaller;
         this.queryFactory = queryFactory;
-        this.pipeline = new ArrayList<DBObject>();
+        this.pipeline = new ArrayList<BasicDBObject>();
         this.options = new AtomicReference<AggregationOptions>();
         this.collection = collection;
     }
 
     public Aggregate and(String pipelineOperator, Object... parameters) {
         DBObject dbQuery = queryFactory.createQuery(pipelineOperator, parameters).toDBObject();
-        pipeline.add(dbQuery);
+        pipeline.add(new BasicDBObject(dbQuery.toMap()));
         return this;
     }
 
@@ -65,10 +68,16 @@ public class Aggregate {
         Iterator<DBObject> results;
         AggregationOptions options = this.options.get();
         if (options != null) {
-            results = collection.aggregate(pipeline, options);
+            results = collection.aggregate(pipeline, DBObject.class).iterator();
         } else {
-            results = collection.aggregate(pipeline).results().iterator();
+            AggregateIterable<DBObject> aggregate = collection.aggregate(pipeline, DBObject.class);
+            aggregate.allowDiskUse(options.getAllowDiskUse());
+            aggregate.batchSize(options.getBatchSize());
+            aggregate.maxTime(options.getMaxTime(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
+
+            results = aggregate.iterator();
         }
+
         return new ResultsIterator<T>(results, resultHandler);
     }
 

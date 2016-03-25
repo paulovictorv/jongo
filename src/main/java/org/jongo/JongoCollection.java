@@ -19,7 +19,6 @@ package org.jongo;
 import com.mongodb.BasicDBObject;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
-import com.mongodb.WriteResult;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.CountOptions;
 import com.mongodb.client.model.IndexOptions;
@@ -132,24 +131,27 @@ public class JongoCollection {
         return new Update(collection, writeConcern, mapper.getQueryFactory(), query, parameters);
     }
 
-    public WriteResult save(Object pojo) {
-        return new Insert(collection, writeConcern, mapper.getMarshaller(), mapper.getObjectIdUpdater(), mapper.getQueryFactory()).save(pojo);
+    public void save(Object pojo) {
+        new Insert(collection, writeConcern, mapper.getMarshaller(),
+                mapper.getObjectIdUpdater(), mapper.getQueryFactory()).save(pojo);
     }
 
-    public WriteResult insert(Object pojo) {
+    public void insert(Object pojo) {
         return insert(new Object[]{pojo});
     }
 
-    public WriteResult insert(String query) {
+    public void insert(String query) {
         return insert(query, NO_PARAMETERS);
     }
 
-    public WriteResult insert(Object... pojos) {
-        return new Insert(collection, writeConcern, mapper.getMarshaller(), mapper.getObjectIdUpdater(), mapper.getQueryFactory()).insert(pojos);
+    public void insert(Object... pojos) {
+        new Insert(collection, writeConcern, mapper.getMarshaller(),
+                mapper.getObjectIdUpdater(), mapper.getQueryFactory()).insert(pojos);
     }
 
-    public WriteResult insert(String query, Object... parameters) {
-        return new Insert(collection, writeConcern, mapper.getMarshaller(), mapper.getObjectIdUpdater(), mapper.getQueryFactory()).insert(query, parameters);
+    public void insert(String query, Object... parameters) {
+        new Insert(collection, writeConcern, mapper.getMarshaller(),
+                mapper.getObjectIdUpdater(), mapper.getQueryFactory()).insert(query, parameters);
     }
 
     public DeleteResult remove(ObjectId id) {
@@ -177,7 +179,8 @@ public class JongoCollection {
     }
 
     public Aggregate aggregate(String pipelineOperator, Object... parameters) {
-        return new Aggregate(collection, mapper.getUnmarshaller(), mapper.getQueryFactory()).and(pipelineOperator, parameters);
+        return new Aggregate(collection, mapper.getUnmarshaller(), mapper.getQueryFactory())
+                .and(pipelineOperator, parameters);
     }
 
     public void drop() {

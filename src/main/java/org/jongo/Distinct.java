@@ -17,8 +17,9 @@
 package org.jongo;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
+import com.mongodb.client.DistinctIterable;
+import com.mongodb.client.MongoCollection;
 import org.jongo.marshall.Unmarshaller;
 import org.jongo.query.Query;
 import org.jongo.query.QueryFactory;
@@ -29,13 +30,13 @@ import java.util.List;
 import static org.jongo.ResultHandlerFactory.newResultHandler;
 
 public class Distinct {
-    private final DBCollection dbCollection;
+    private final MongoCollection<BasicDBObject> dbCollection;
     private final Unmarshaller unmarshaller;
     private final String key;
     private Query query;
     private final QueryFactory queryFactory;
 
-    Distinct(DBCollection dbCollection, Unmarshaller unmarshaller, QueryFactory queryFactory, String key) {
+    Distinct(MongoCollection<BasicDBObject> dbCollection, Unmarshaller unmarshaller, QueryFactory queryFactory, String key) {
         this.dbCollection = dbCollection;
         this.unmarshaller = unmarshaller;
         this.key = key;
@@ -56,9 +57,10 @@ public class Distinct {
     @SuppressWarnings("unchecked")
     public <T> List<T> as(final Class<T> clazz) {
         DBObject ref = query.toDBObject();
-        List<?> distinct = dbCollection.distinct(key, ref);
+        DistinctIterable<DBObject> distinct = dbCollection.distinct(key, DBObject.class);
 
-        if (distinct.isEmpty() || resultsAreBSONPrimitive(distinct))
+        //possible obsolete code: || resultsAreBSONPrimitive(distinct)
+        if (distinct.spliterator().estimateSize() == 0)
             return (List<T>) distinct;
         else {
             return typedList((List<DBObject>) distinct, newResultHandler(clazz, unmarshaller));
@@ -67,12 +69,15 @@ public class Distinct {
 
     public <T> List<T> map(ResultHandler<T> resultHandler) {
         DBObject ref = query.toDBObject();
-        List<?> distinct = dbCollection.distinct(key, ref);
+        DistinctIterable<DBObject> distinct = dbCollection.distinct(key, DBObject.class);
 
-        if (distinct.isEmpty() || resultsAreBSONPrimitive(distinct)) {
-            return typedList(asDBObjectList(distinct), resultHandler);
+        //|| resultsAreBSONPrimitive(distinct)
+        @SuppressWarnings("unchecked")
+        List<DBObject> castedAsList = (List<DBObject>) distinct;
+        if (distinct.spliterator().estimateSize() == 0) {
+            return typedList(asDBObjectList(castedAsList), resultHandler);
         } else {
-            return typedList((List<DBObject>) distinct, resultHandler);
+            return typedList(castedAsList, resultHandler);
         }
     }
 
