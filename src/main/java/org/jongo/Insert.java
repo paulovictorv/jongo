@@ -50,22 +50,24 @@ class Insert {
         collection.insertOne(new BasicDBObject(dbo.toMap()));
     }
 
-    public WriteResult insert(Object... pojos) {
-        List<DBObject> dbos = new ArrayList<DBObject>(pojos.length);
+    public void insert(Object... pojos) {
+        List<BasicDBObject> dbos = new ArrayList<BasicDBObject>(pojos.length);
+
         for (Object pojo : pojos) {
             Object id = preparePojo(pojo);
             LazyIdDBObject dbo = convertToDBObject(pojo, id);
-            dbos.add(dbo);
+            dbos.add(new BasicDBObject(dbo.toMap()));
         }
-        return collection.insertMany(dbos);
+
+        collection.insertMany(dbos);
     }
 
-    public WriteResult insert(String query, Object... parameters) {
+    public void insert(String query, Object... parameters) {
         DBObject dbQuery = queryFactory.createQuery(query, parameters).toDBObject();
         if (dbQuery instanceof BasicDBList) {
-            return insert(((BasicDBList) dbQuery).toArray());
+            insert(((BasicDBList) dbQuery).toArray());
         } else {
-            return collection.insert(dbQuery, writeConcern);
+            collection.insertOne(new BasicDBObject(dbQuery.toMap()));
         }
     }
 

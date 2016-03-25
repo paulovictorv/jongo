@@ -201,7 +201,7 @@ public class JongoCollection {
     }
 
     public String getName() {
-        return collection.getNamespace().getCollectionName()
+        return collection.getNamespace().getCollectionName();
     }
 
     public MongoCollection<BasicDBObject> getDBCollection() {
