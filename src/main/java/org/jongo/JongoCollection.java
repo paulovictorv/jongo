@@ -137,11 +137,11 @@ public class JongoCollection {
     }
 
     public void insert(Object pojo) {
-        return insert(new Object[]{pojo});
+        insert(new Object[]{pojo});
     }
 
     public void insert(String query) {
-        return insert(query, NO_PARAMETERS);
+        insert(query, NO_PARAMETERS);
     }
 
     public void insert(Object... pojos) {

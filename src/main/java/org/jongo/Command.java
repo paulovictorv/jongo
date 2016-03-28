@@ -17,9 +17,9 @@
 package org.jongo;
 
 
-import com.mongodb.CommandResult;
-import com.mongodb.DB;
 import com.mongodb.DBObject;
+import com.mongodb.client.MongoDatabase;
+import org.bson.Document;
 import org.jongo.marshall.Unmarshaller;
 import org.jongo.query.Query;
 import org.jongo.query.QueryFactory;
@@ -31,13 +31,13 @@ import static org.jongo.ResultHandlerFactory.newResultHandler;
 
 public class Command {
 
-    private final DB db;
+    private final MongoDatabase db;
     private final Unmarshaller unmarshaller;
     private final QueryFactory queryFactory;
     private Query query;
     private boolean throwOnError;
 
-    public Command(DB db, Unmarshaller unmarshaller, QueryFactory queryFactory, String query, Object... parameters) {
+    public Command(MongoDatabase db, Unmarshaller unmarshaller, QueryFactory queryFactory, String query, Object... parameters) {
         this.db = db;
         this.unmarshaller = unmarshaller;
         this.queryFactory = queryFactory;
@@ -57,17 +57,15 @@ public class Command {
         return map(newResultHandler(clazz, unmarshaller));
     }
 
-    public <T> T map(ResultHandler<T> resultHandler) {
-        CommandResult commandResult = executeCommand();
+    public <T> T map(CommandResultHandler<T> resultHandler) {
+        Document commandResult = executeCommand();
+
         return resultHandler.map(commandResult);
     }
 
-    private CommandResult executeCommand() {
-        CommandResult commandResult = db.command(query.toDBObject());
-        if (throwOnError) {
-            commandResult.throwOnError();
-        }
-        return commandResult;
+    private Document executeCommand() {
+        Document document = db.runCommand(query.toBson());
+        return document;
     }
 
     public class ResultCommand {
@@ -83,7 +81,7 @@ public class Command {
         }
 
         public <T> List<T> map(ResultHandler<T> resultHandler) {
-            CommandResult commandResult = executeCommand();
+            Document commandResult = executeCommand();
             List<DBObject> results = (List<DBObject>) commandResult.get(fieldName);
             if (results == null) {
                 return new ArrayList<T>();
@@ -95,4 +93,5 @@ public class Command {
             return mappedResult;
         }
     }
+
 }

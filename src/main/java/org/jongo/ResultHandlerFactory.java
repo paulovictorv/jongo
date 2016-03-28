@@ -28,6 +28,10 @@ class ResultHandlerFactory {
         return new UnmarshallingResultHandler<T>(unmarshaller, clazz);
     }
 
+    public static <T> ResultHandler<T> newCommandHandler(final Class<T> clazz, final Unmarshaller unmarshaller) {
+        return new UnmarshallingResultHandler<T>(unmarshaller, clazz);
+    }
+
     private static class UnmarshallingResultHandler<T> implements ResultHandler<T> {
 
         private final Unmarshaller unmarshaller;
